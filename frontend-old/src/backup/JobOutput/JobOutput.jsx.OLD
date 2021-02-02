@@ -1,0 +1,18 @@
+import React, { Component } from "react";
+
+class JobOutput extends Component {
+  render() {
+    const messages = this.props.JobOutput((msg) => (
+      <p >{msg.data}</p>
+    ));
+
+    return (
+      <div className="JobOutput">
+        <h2>Job Output</h2>
+        {messages}
+      </div>
+    );
+  }
+}
+
+export default JobOutput;

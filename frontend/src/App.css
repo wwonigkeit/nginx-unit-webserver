@@ -1,0 +1,45 @@
+html {
+      box-sizing: border-box;
+      padding-left: 0;
+    }
+
+    *, *::before, *::after {
+      box-sizing: inherit;
+      padding-left: 0;
+      padding: 5;
+      margin: 5;
+    }
+
+    .app {
+      width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      background-color:white;
+      margin-bottom: 20px;
+    }
+
+    nav ul li {
+      padding: 10px;
+    }
+
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+    }
+
+    .current {
+      border-bottom: 4px solid white;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    p {
+      margin-bottom: 15px;
+    }
