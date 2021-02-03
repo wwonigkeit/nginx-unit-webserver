@@ -183,7 +183,8 @@ exports.baseSchema = {
                   },
                   "thread_stack_size":{
                      "type":"number",
-                     "title":"Stack size of a worker thread (in bytes)"
+                     "title":"Stack size of a worker thread (in bytes)",
+                     "default": 512000000
                   }
                },
                "required": [
@@ -210,7 +211,8 @@ exports.baseSchema = {
                   },
                   "thread_stack_size":{
                      "type":"number",
-                     "title":"Stack size of a worker thread (in bytes)"
+                     "title":"Stack size of a worker thread (in bytes)",
+                     "default": 512000000
                   }
                },
                "required":[

@@ -1,18 +1,20 @@
 .Message {
-	 display: block;
-	 background-color: white;
-	 margin: 10px auto;
-	 box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2);
-	 padding: 10px 20px;
-	 border-radius: 5px;
-   clear: both;
-   font-family: Courier;
-   font-size: 14px;
-   font-style: normal;
-   font-variant: normal;
-   font-weight: 400;
-   line-height: 23px;
+	/*display: block;
+	background-color: white;
+	margin: 10px auto;
+	box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2);
+	padding: 10px 20px;
+	border-radius: 5px;
+	clear: both;*/																																																								
+    font-family: Courier;
+    font-size: 12px;
+    font-style: normal;
+    font-variant: normal;
+	font-weight: 400;
+	white-space: pre-wrap;
+    /*line-height: 18px;*/
 }
+
  .Message.me {
 	 color: white;
 	 float: right;

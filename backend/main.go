@@ -14,69 +14,100 @@ var message websocket.Message
 func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("WebSocket Endpoint Hit")
 
-	/*
-		conn, err := websocket.Upgrade(w, r)
-		if err != nil {
-			fmt.Fprintf(w, "%+v\n", err)
-		}
+	/* UNCOMMENT FROM PRODUCTION */
+	conn, err := websocket.Upgrade(w, r)
+	if err != nil {
+		fmt.Fprintf(w, "%+v\n", err)
+	}
 
-		client := &websocket.Client{
-			Conn: conn,
-			Pool: pool,
-		}
+	client := &websocket.Client{
+		Conn: conn,
+		Pool: pool,
+	}
 
-		pool.Register <- client
-		message, _ = client.Read()
-		baseJSONObj := json.RawMessage(message.Body)
-	*/
+	pool.Register <- client
+	message, _ = client.Read()
+	jsonmessage := json.RawMessage(message.Body)
 
-	baseJSONObj := json.RawMessage(`{"port":80,"limits":{"timeout":10,"requests":100},"processes":{"max":1,"spare":1,"idle_timeout":20},"user":"root","group":"root","environment":{"newKey":"New Value","newKey-1":"New Value"},"arguments":["--tmp","/tmp/fello"],"lang":"go","appname":"gobin","repo":" https://github.com/username/repo.git","cloud":"aws","working_directory":"/workingdir/","executable":"gobinapp"}`)
+	// jsonmessage := json.RawMessage(`{"port":80,"limits":{"timeout":10,"requests":100},"processes":{"max":1,"spare":1,"idle_timeout":20},"user":"root","group":"root","environment":{"newKey":"New Value","newKey-1":"New Value"},"arguments":["--tmp","/tmp/fello"],"lang":"go","appname":"gobin","repo":" https://github.com/username/repo.git","cloud":"aws","working_directory":"/workingdir/","executable":"gobinapp"}`)
 
 	var p unit.BaseStruct
-
-	if err := json.Unmarshal(baseJSONObj, &p); err != nil {
+	if err := json.Unmarshal(jsonmessage, &p); err != nil {
 		panic(err)
 	}
 
-	/*
-		mapEnvironment, _ := json.Marshal(p.Environment)
-		mapBase := structs.Map(p)
+	//Build the base configuration for the machine
+	/* UNCOMMENT FROM PRODUCTION */
+	unit.GenericPrepBuild(&p, client)
 
-		fmt.Printf("%+v\n", p)
-		fmt.Println(mapEnvironment)
-
-		client.Pool.Broadcast <- message
-	*/
-
+	// Switch used to select the appropriate language modules to build
 	switch lang := p.Lang; lang {
 	case "go", "nodejs":
-		fmt.Println("Executing the Golang/NodeJS build")
-
-		//client.Pool.Broadcast <- websocket.Message{Type: 2, Body: "Executing the Golang/NodeJS build"}
-
 		var externalStruct unit.External
-
-		if err := json.Unmarshal(baseJSONObj, &externalStruct); err != nil {
+		if err := json.Unmarshal(jsonmessage, &externalStruct); err != nil {
 			panic(err)
 		}
+		// Create the config.json file for the language
+		/* UNCOMMENT FOR PRODUCTION */
+		unit.EchoExternalJSONConfig(&externalStruct, client)
+		// unit.EchoExternalJSONConfig(&externalStruct)
 
-		unit.ExternalBuild(&externalStruct)
+		//Provision to the cloud platform
+		unit.BuildExternalMachine(&externalStruct, client)
 
 	case "java":
-		fmt.Println("Executing the Java build")
-		//client.Pool <- "Executing the Java build"
+		var javaStruct unit.Java
+		if err := json.Unmarshal(jsonmessage, &javaStruct); err != nil {
+			panic(err)
+		}
+		// Create the config.json file for the language
+		/* UNCOMMENT FOR PRODUCTION */
+		unit.EchoJavaJSONConfig(&javaStruct, client)
+		// unit.EchoJavaJSONConfig(&javaStruct)
+
 	case "perl":
-		fmt.Println("Executing the Perl build")
-		//client.Pool <- "Executing the Perl build"
+		var perlStruct unit.Perl
+
+		if err := json.Unmarshal(jsonmessage, &perlStruct); err != nil {
+			panic(err)
+		}
+		// Create the config.json file for the language
+		/* UNCOMMENT FOR PRODUCTION */
+		unit.EchoPerlJSONConfig(&perlStruct, client)
+		// unit.EchoPerlJSONConfig(&perlStruct)
+
 	case "php":
-		fmt.Println("Executing the PHP build")
-		//client.Pool <- "Executing the PHP build"
+		var phpStruct unit.PHP
+
+		if err := json.Unmarshal(jsonmessage, &phpStruct); err != nil {
+			panic(err)
+		}
+		// Create the config.json file for the language
+		/* UNCOMMENT FOR PRODUCTION */
+		unit.EchoPHPJSONConfig(&phpStruct, client)
+		// unit.EchoPHPJSONConfig(&phpStruct)
+
 	case "python":
-		fmt.Println("Executing the Python build")
-		//client.Pool <- "Executing the Python build"
+		var pythonStruct unit.Python
+
+		if err := json.Unmarshal(jsonmessage, &pythonStruct); err != nil {
+			panic(err)
+		}
+		// Create the config.json file for the language
+		/* UNCOMMENT FOR PRODUCTION */
+		unit.EchoPythonJSONConfig(&pythonStruct, client)
+		// unit.EchoPythonJSONConfig(&pythonStruct)
+
 	case "ruby":
-		fmt.Println("Executing the Ruby build")
-		//client.Pool <- "Executing the Ruby build"
+		var rubyStruct unit.Ruby
+
+		if err := json.Unmarshal(jsonmessage, &rubyStruct); err != nil {
+			panic(err)
+		}
+		// Create the config.json file for the language
+		/* UNCOMMENT FOR PRODUCTION */
+		unit.EchoRubyJSONConfig(&rubyStruct, client)
+		// unit.EchoRubyJSONConfig(&rubyStruct)
 	}
 }
 

@@ -2,22 +2,22 @@ package unit
 
 //Limits struct used by the base structs
 type Limits struct {
-	Timeout  int64 `json:"timeout"`
-	Requests int64 `json:"requests"`
+	Timeout  int `json:"timeout"`
+	Requests int `json:"requests"`
 }
 
 //Processes struct ued by the base struct
 type Processes struct {
-	Max         int64 `json:"max"`
-	Spare       int64 `json:"spare"`
-	IdleTimeout int64 `json:"idle_timeout"`
+	Max         int `json:"max"`
+	Spare       int `json:"spare"`
+	IdleTimeout int `json:"idle_timeout"`
 }
 
 //Options for PHP struct used for the JSON unmarshalling
 type Options struct {
-	Admin string `json:"admin"`
-	User  string `json:"user"`
-	File  string `json:"file"`
+	Admin map[string]interface{} `json:"admin"`
+	User  map[string]interface{} `json:"user"`
+	File  string                 `json:"file"`
 }
 
 //Targets for PHP struct used for the JSON unmarshalling
@@ -30,7 +30,7 @@ type Targets struct {
 
 //BaseStruct used for the JSON unmarshalling
 type BaseStruct struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -45,7 +45,7 @@ type BaseStruct struct {
 
 //External struct used for JSON unmarshalling
 type External struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -62,7 +62,7 @@ type External struct {
 
 //Java struct used for the JSON unmarshalling
 type Java struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -75,14 +75,14 @@ type Java struct {
 	WorkingDirectory string                 `json:"working_directory"`
 	Classpath        []string               `json:"classpath"`
 	Options          []string               `json:"options"`
-	Threads          int64                  `json:"threads"`
-	ThreadStackSize  int64                  `json:"thread_stack_size"`
+	Threads          int                    `json:"threads"`
+	ThreadStackSize  int                    `json:"thread_stack_size"`
 	Webapp           string                 `json:"webapp"`
 }
 
 //Perl struct used for the JSON unmarshalling
 type Perl struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -93,13 +93,14 @@ type Perl struct {
 	Appname          string                 `json:"appname"`
 	Cloud            string                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
-	Threads          int64                  `json:"threads"`
+	Threads          int                    `json:"threads"`
+	ThreadStackSize  int                    `json:"thread_stack_size"`
 	Script           string                 `json:"script"`
 }
 
 //PHP struct used for the JSON unmarshalling
 type PHP struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -116,7 +117,7 @@ type PHP struct {
 
 //Python struct used for the JSON unmarshalling
 type Python struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -128,17 +129,17 @@ type Python struct {
 	Cloud            string                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Protocol         string                 `json:"protocol"`
-	Threads          int64                  `json:"threads"`
+	Threads          int                    `json:"threads"`
 	Module           string                 `json:"module"`
 	Callable         string                 `json:"callable"`
 	Home             string                 `json:"home"`
 	Path             string                 `json:"path"`
-	ThreadStackSize  int64                  `json:"thread_stack_size"`
+	ThreadStackSize  int                    `json:"thread_stack_size"`
 }
 
 //Ruby struct used for the JSON unmarshalling
 type Ruby struct {
-	Port             int64                  `json:"port"`
+	Port             int                    `json:"port"`
 	Limits           *Limits                `json:"limits"`
 	Processes        *Processes             `json:"processes"`
 	User             string                 `json:"user"`
@@ -149,6 +150,6 @@ type Ruby struct {
 	Appname          string                 `json:"appname"`
 	Cloud            string                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
-	Threads          int64                  `json:"threads"`
+	Threads          int                    `json:"threads"`
 	Script           string                 `json:"script"`
 }

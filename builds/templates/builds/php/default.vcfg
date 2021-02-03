@@ -1,0 +1,28 @@
+[[program]]
+  binary = "/build-php.sh"
+  env = ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "UNIT_VERSION=1.21.0-1~buster"]
+  logfiles = ["/var/log/unitd.log"]
+
+[[network]]
+  hostname = "nginx-php"
+  ip = "dhcp"
+
+[vm]
+  ram = "512 MiB"
+  disk-size = "+2048 MiB"
+
+[[logging]]
+  config = ["Name=http", "Host=35.201.9.144", "Port=3080", "Format=json"]
+  type = "stdout"
+
+[[logging]]
+  config = ["Name=http", "Host=35.201.9.144", "Port=3080", "Format=json"]
+  type = "system"
+
+[[logging]]
+  config = ["Name=http", "Host=35.201.9.144", "Port=3080", "Format=json"]
+  type = "kernel"
+
+[[logging]]
+  config = ["Name=http", "Host=35.201.9.144", "Port=3080", "Format=json"]
+  type = "programs"
