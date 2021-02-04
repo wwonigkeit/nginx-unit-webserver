@@ -1,6 +1,10 @@
 exports.customFormats = {
    "repo":"https://.*.git",
-   "perl-script":".*.psgi"
+   "perl-script": "^[^/].*.psgi",
+   "external-executable": "^[^/].*",
+   "java-webapp": "^[^/].*",
+   "ruby-script": "^[^/].*.ru",
+   "working-directory": "^/.*"
 }
 
 exports.baseSchema = {
@@ -31,16 +35,84 @@ exports.baseSchema = {
          "type":"string",
          "format":"repo"
       },
-      "cloud":{
-         "type":"string",
-         "title":"Cloud selection",
-         "description":"Select cloud for provisioning (currently Amazon Web Services[aws], Google Cloud Platform[gcp] or VMware Packet.com[vmw])",
-         "enum":[
-            "aws",
-            "gcp",
-            "vmw"
-         ]
+      "cloud": {
+         "title": "Cloud deployment details",
+         "type": "object",
+         "properties":{
+            "platform": {
+               "type":"string",
+               "title":"Cloud selection",
+               "description":"Select cloud for provisioning (currently Amazon Web Services[aws], Google Cloud Platform[gcp] or Microsoft Azure [azure])",
+               "enum":[
+                  "aws",
+                  "gcp",
+                  "azure"
+               ],
+               "enumNames": ["Amazon Web Services", "Google Cloud Platform", "Azure"],
+               "default":"gcp"
+            },
+         },
+         "required": [
+            "platform"
+         ],
+         "dependencies": {
+            "platform": {
+               "oneOf": [
+                  {
+                     "properties":{
+                        "platform":{
+                           "enum": [ "aws" ]
+                        },
+                        "machinetype":{
+                           "type": "string",
+                           "title": "Machine type",
+                           "description": "Select the machine type from the Amazon Web Services offerings below",
+                           "enum": ["t2.nano","t2.micro","t2.small","t2.medium","t2.large","t2.xlarge"],
+                           "enumNames": ["t2.nano (1vCPU, 0.5GB mem)", "t2.micro (1vCPU, 1GB mem)", "t2.small (1vCPU, 2GB mem)", "t2.medium (2vCPU, 4GB mem)", "t2.large (2vCPU, 8GB mem)", "t2.xlarge (4vCPU, 16GB mem)"]
+                        },
+                     },
+                     "required": [
+                        "machinetype"
+                     ],
+                  },
+                  {
+                     "properties":{
+                        "platform":{
+                           "enum": [ "gcp" ]
+                        },
+                        "machinetype":{
+                           "type": "string",
+                           "title": "Machine type",
+                           "description": "Select the machine type from the Google Cloud Platform offerings below",
+                           "enum": ["f1-micro","g1-small","n1-standard-1","n1-standard-2","n1-standard-4"],
+                           "enumNames": ["f1-micro (1vCPU, 0.6GB mem)", "g1-small (1vCPU, 1.7GB mem)", "n1-standard-1 (1vCPU, 3.75GB mem)", "n1-standard-2 (2vCPU, 7.5GB mem)","n1-standard-4 (4vCPU, 15GB)"]
+                        },
+                     },
+                     "required": [
+                        "machinetype"
+                     ],
+                  },
+                  {
+                     "properties":{
+                        "platform":{
+                           "enum": [ "azure" ]
+                        },
+                        "machinetype":{
+                           "type": "string",
+                           "title": "Machine type",
+                           "description": "Select the machine type from the Google Cloud Platform offerings below",
+                           "enum": ["Standard_B1ls","Standard_B1ms","Standard_B2s","Standard_B2ms","Standard_B4ms"],
+                           "enumNames": ["Standard_B1ls1	(1vCPU, 0.5GB mem)", "Standard_B1ms (1vCPU, 2GB mem)", "Standard_B2s (2vCPU, 4GB mem)", "Standard_B2ms (2vCPU, 8GB mem)","Standard_B4ms (4vCPU, 16GB)"]
+                        },
+                     },
+                     "required": [
+                        "machinetype"
+                     ],
+                  }
+               ]
+            }
 
+         }
       },
       "port": {
          "type":"number",
@@ -93,7 +165,8 @@ exports.baseSchema = {
       "working_directory":{
          "type":"string",
          "title":"Working Directory",
-         "description":"The applications working directory"
+         "description":"The applications working directory",
+         "format": "working-directory"
       },
       "user":{
          "type":"string",
@@ -117,7 +190,7 @@ exports.baseSchema = {
       }
    },
    "required": [
-      "lang", "working_directory", "appname","repo","cloud"
+      "lang", "working_directory", "appname","repo"
    ],
    "dependencies": {
       "lang":{
@@ -132,7 +205,8 @@ exports.baseSchema = {
                   "executable":{
                      "type":"string",
                      "title":"Exectuable name",
-                     "description":"Pathname of the application, absolute or relative to working directory"
+                     "description":"Pathname of the application, relative to working directory",
+                     "format": "external-executable"
                   },
                   "arguments":{
                      "type":"array",
@@ -158,7 +232,8 @@ exports.baseSchema = {
                   "webapp":{
                      "type":"string",
                      "title": "Application name",
-                     "description":"Pathname and name of the application’s packaged or unpackaged .war file: e.g. /www/helloworld/helloworld.war"
+                     "description":"Pathname and name of the application’s packaged or unpackaged .war file: e.g. helloworld.war relative to the working directory",
+                     "format": "java-webapp"
                   },
                   "classpath":{
                      "type":"array",
@@ -201,7 +276,7 @@ exports.baseSchema = {
                   "script":{
                      "type":"string",
                      "title":"PSGI script path",
-                     "description": "Absolute pathname and name of PSGI script (or relative to working directory)",
+                     "description": "Name of PSGI script relative to working directory)",
                      "format": "perl-script"
                   },
                   "threads":{
@@ -233,7 +308,7 @@ exports.baseSchema = {
                         "file": {
                            "type": "string",
                            "title": "PHP.ini file location",
-                           "description": "Pathname of the php.ini file with PHP configuration directives"
+                           "description": "Absolute pathname of the php.ini file with PHP configuration directives"
                         },
                         "admin": {
                            "type": "object",
@@ -325,7 +400,7 @@ exports.baseSchema = {
                   "home":{
                      "type":"string",
                      "title":"Home directory",
-                     "description": "Path to the app’s virtual environment. Absolute or relative to working_directory"
+                     "description": "Path to the app’s virtual environment. Relative to working_directory"
                   },
                   "path":{
                      "type":"string",
@@ -368,7 +443,8 @@ exports.baseSchema = {
                   "script":{
                      "type":"string",
                      "title":"Rack script name",
-                     "description": "Rack script pathname, including the .ru extension: /www/rubyapp/script.ru"
+                     "description": "Rack script name relative to the working directory, including the .ru extension: script.ru",
+                     "format": "ruby-script"
                   },
                   "threads":{
                      "type":"number",

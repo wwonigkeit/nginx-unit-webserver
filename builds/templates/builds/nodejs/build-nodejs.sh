@@ -23,7 +23,7 @@ else
         rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/*.list
 
         # make a copy of the GitHub repo
-        mkdir /$WORKINGDIR/ && mkdir /src/ && cd /src/
+        mkdir /src/ && cd /src/
         git clone $GITHUB_REPO
         # directory for the GitHub cloned repo
         set -- /src/*/
@@ -31,14 +31,16 @@ else
         # Get the name of the directory
         APPNAME=`ls`
 
+	# make the working directory
+	mkdir -p /$WORKINGDIR
         # make app.js executable; link unit-http locally
         cd /$CODENAME && mv -f * /$WORKINGDIR/
         cd /$WORKINGDIR/ && chmod +x $EXECUTABLE
-        pwd
-        ls -la
+        #pwd
+        #ls -la
         npm link unit-http && npm install express && npm install yargs
-        pwd
-        ls -la
+        #pwd
+        #ls -la
 
         /usr/local/bin/docker-entrypoint.sh unitd-debug --log /var/log/unitd.log --control 0.0.0.0:8080 --user root --group root
 fi

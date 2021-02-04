@@ -1,7 +1,10 @@
 #!/bin/bash
+
+
+### NOT COMPLETED
   
 #Check if the build has previously initialised
-if [ -f "$SCRIPT" ] || [ -f "$WORKINGDIR\\$SCRIPT" ]; then
+if [ -f "$WORKINGDIR/$SCRIPT" ]; then
         echo "The application has perviously been copied - just start NGINX unit"
         /usr/local/bin/docker-entrypoint.sh unitd-debug --log /var/log/unitd.log --control 0.0.0.0:8080 --user root --group root
 else

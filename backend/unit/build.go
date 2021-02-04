@@ -9,10 +9,10 @@ import (
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
 
-//GenericPrepBuild executes the build for all pplications
+//Build executes the build for all pplications
 //It takes the external unmarshalled JSON object and the client
 //object to relay the build progress
-func GenericPrepBuild(baseJSONObj *BaseStruct, c *websocket.Client) {
+func Build(baseJSONObj *BaseStruct, c *websocket.Client) {
 
 	fmt.Println("Build the " + baseJSONObj.Lang + " platform")
 

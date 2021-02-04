@@ -26,6 +26,5 @@ else
 	cd $CODENAME
 	/usr/lib/go-1.11/bin/go build -o $WORKINGDIR/$EXECUTABLE
 
-	ls /compiled/$WORKINGDIR/$EXECUTABLE
 	/usr/local/bin/docker-entrypoint.sh unitd-debug --log /var/log/unitd.log --control 0.0.0.0:8080 --user root --group root
 fi

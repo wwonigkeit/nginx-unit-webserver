@@ -28,6 +28,12 @@ type Targets struct {
 	Index     string `json:"index"`
 }
 
+//Cloud struct for cloud deployment details used for the JSON unmarshalling
+type Cloud struct {
+	Platform    string `json:"platform"`
+	MachineType string `json:"machinetype"`
+}
+
 //BaseStruct used for the JSON unmarshalling
 type BaseStruct struct {
 	Port             int                    `json:"port"`
@@ -39,7 +45,7 @@ type BaseStruct struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 }
 
@@ -54,7 +60,7 @@ type External struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Executable       string                 `json:"executable"`
 	Arguments        []string               `json:"arguments"`
@@ -71,7 +77,7 @@ type Java struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Classpath        []string               `json:"classpath"`
 	Options          []string               `json:"options"`
@@ -91,7 +97,7 @@ type Perl struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Threads          int                    `json:"threads"`
 	ThreadStackSize  int                    `json:"thread_stack_size"`
@@ -109,7 +115,7 @@ type PHP struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Options          *Options               `json:"options"`
 	Targets          []*Targets             `json:"targets"`
@@ -126,7 +132,7 @@ type Python struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Protocol         string                 `json:"protocol"`
 	Threads          int                    `json:"threads"`
@@ -148,7 +154,7 @@ type Ruby struct {
 	Lang             string                 `json:"lang"`
 	Repo             string                 `json:"repo"`
 	Appname          string                 `json:"appname"`
-	Cloud            string                 `json:"cloud"`
+	Cloud            *Cloud                 `json:"cloud"`
 	WorkingDirectory string                 `json:"working_directory"`
 	Threads          int                    `json:"threads"`
 	Script           string                 `json:"script"`

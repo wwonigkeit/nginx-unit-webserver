@@ -1,18 +1,22 @@
 package unit
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
+	"os/exec"
 	"strconv"
+	"time"
 
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
 
-//EchoRubyJSONConfig echos the configuration for the Ruby
+//RubyConfig echos the configuration for the Ruby
 //Unit startup configurations
-/* UNCOMMENT FOR PRODUCTION */
-func EchoRubyJSONConfig(rubyJSONObj *Ruby, c *websocket.Client) {
-	// func EchoRubyJSONConfig(rubyJSONObj *Ruby) {
+func RubyConfig(rubyJSONObj *Ruby, c *websocket.Client) {
+
 	var environmentstr string
 
 	for key, value := range rubyJSONObj.Environment {
@@ -50,9 +54,51 @@ func EchoRubyJSONConfig(rubyJSONObj *Ruby, c *websocket.Client) {
 			}
 		}
 	}`
-	/* UNCOMMENT FOR PRODUCTION */
+
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + rubyJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
 	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + rubyJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+}
+
+//BuildRubyImage pushes the machine to the appropriate cloud platform as an image
+func BuildRubyImage(rubyJSONObj *Ruby, c *websocket.Client) (imagename string) {
+
+	// Create a image name which is unique
+	now := time.Now()
+	timestamp := now.Unix()
+	image := "nginx-unit-" + rubyJSONObj.Lang + "-" + strconv.FormatInt(timestamp, 10)
+
+	// Provision the machine image to the appropriate cloud platform
+	cmd := exec.Command("vorteil", "images", "provision", BUILDDIR+"/machines/builds/nginx-unit-"+rubyJSONObj.Lang+"/", BUILDDIR+"/templates/provisioners/"+rubyJSONObj.Cloud.Platform+".provisioner", "--program[0].env", `"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","UNIT_VERSION=1.21.0-1~buster","GITHUB_REPO=`+rubyJSONObj.Repo+`","WORKINGDIR=`+rubyJSONObj.WorkingDirectory+`","SCRIPT=`+rubyJSONObj.Script+`"`, "--name", image, "--force")
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if err = cmd.Start(); err != nil {
+		log.Println(err)
+		return
+	}
+
+	s := bufio.NewScanner(io.MultiReader(stdout, stderr))
+	for s.Scan() {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: s.Text()}
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Println(err)
+		return image
+	}
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Succesfully provisioned the machine image")}
+	return image
 }

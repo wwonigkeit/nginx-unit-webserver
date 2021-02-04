@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/wwonigkeit/nginx-unit-webserver/backend/cloud"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/unit"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
@@ -14,7 +16,6 @@ var message websocket.Message
 func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("WebSocket Endpoint Hit")
 
-	/* UNCOMMENT FROM PRODUCTION */
 	conn, err := websocket.Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+v\n", err)
@@ -29,17 +30,18 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	message, _ = client.Read()
 	jsonmessage := json.RawMessage(message.Body)
 
-	// jsonmessage := json.RawMessage(`{"port":80,"limits":{"timeout":10,"requests":100},"processes":{"max":1,"spare":1,"idle_timeout":20},"user":"root","group":"root","environment":{"newKey":"New Value","newKey-1":"New Value"},"arguments":["--tmp","/tmp/fello"],"lang":"go","appname":"gobin","repo":" https://github.com/username/repo.git","cloud":"aws","working_directory":"/workingdir/","executable":"gobinapp"}`)
-
+	// From the message pare the base JSON structure to get the language
+	// we're preparing to deploy
 	var p unit.BaseStruct
 	if err := json.Unmarshal(jsonmessage, &p); err != nil {
 		panic(err)
 	}
 
-	//Build the base configuration for the machine
-	/* UNCOMMENT FROM PRODUCTION */
-	unit.GenericPrepBuild(&p, client)
+	// Build the base configuration for the machine, which includes getting the
+	// correct NGINX unit docker container
+	unit.Build(&p, client)
 
+	var imagename string
 	// Switch used to select the appropriate language modules to build
 	switch lang := p.Lang; lang {
 	case "go", "nodejs":
@@ -48,12 +50,10 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		// Create the config.json file for the language
-		/* UNCOMMENT FOR PRODUCTION */
-		unit.EchoExternalJSONConfig(&externalStruct, client)
-		// unit.EchoExternalJSONConfig(&externalStruct)
+		unit.ExternalConfig(&externalStruct, client)
 
 		//Provision to the cloud platform
-		unit.BuildExternalMachine(&externalStruct, client)
+		imagename = unit.BuildExternalImage(&externalStruct, client)
 
 	case "java":
 		var javaStruct unit.Java
@@ -61,9 +61,10 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		// Create the config.json file for the language
-		/* UNCOMMENT FOR PRODUCTION */
-		unit.EchoJavaJSONConfig(&javaStruct, client)
-		// unit.EchoJavaJSONConfig(&javaStruct)
+		unit.JavaConfig(&javaStruct, client)
+
+		//Provision image to the cloud platform
+		imagename = unit.BuildJavaImage(&javaStruct, client)
 
 	case "perl":
 		var perlStruct unit.Perl
@@ -72,9 +73,10 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		// Create the config.json file for the language
-		/* UNCOMMENT FOR PRODUCTION */
-		unit.EchoPerlJSONConfig(&perlStruct, client)
-		// unit.EchoPerlJSONConfig(&perlStruct)
+		unit.PerlConfig(&perlStruct, client)
+
+		//Provision image to the cloud platform
+		imagename = unit.BuildPerlImage(&perlStruct, client)
 
 	case "php":
 		var phpStruct unit.PHP
@@ -83,9 +85,10 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		// Create the config.json file for the language
-		/* UNCOMMENT FOR PRODUCTION */
-		unit.EchoPHPJSONConfig(&phpStruct, client)
-		// unit.EchoPHPJSONConfig(&phpStruct)
+		unit.PhpConfig(&phpStruct, client)
+
+		//Provision image to the cloud platform
+		imagename = unit.BuildPhpImage(&phpStruct, client)
 
 	case "python":
 		var pythonStruct unit.Python
@@ -94,9 +97,10 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		// Create the config.json file for the language
-		/* UNCOMMENT FOR PRODUCTION */
-		unit.EchoPythonJSONConfig(&pythonStruct, client)
-		// unit.EchoPythonJSONConfig(&pythonStruct)
+		unit.PythonConfig(&pythonStruct, client)
+
+		//Provision image to the cloud platform
+		imagename = unit.BuildPythonImage(&pythonStruct, client)
 
 	case "ruby":
 		var rubyStruct unit.Ruby
@@ -105,10 +109,41 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		// Create the config.json file for the language
-		/* UNCOMMENT FOR PRODUCTION */
-		unit.EchoRubyJSONConfig(&rubyStruct, client)
-		// unit.EchoRubyJSONConfig(&rubyStruct)
+		unit.RubyConfig(&rubyStruct, client)
+
+		//Provision image to the cloud platform
+		imagename = unit.BuildRubyImage(&rubyStruct, client)
 	}
+
+	var externalIP string
+	// Switch used to select the appropriate platform to deploy to
+	switch platform := p.Cloud.Platform; platform {
+	case "gcp":
+		// Create a machine in Google Cloud Platform
+		externalIP = cloud.BuildGcpInstance(imagename, p.Cloud.MachineType, client, p.Port)
+	case "aws":
+		//do aws
+	case "azure":
+		//do azure
+	}
+
+	mesg :=
+		"Deployment of the nginx-unit-" + p.Lang + " instance on " + p.Cloud.Platform + " has been completed.\n" +
+			"The external IP adddress for the machine is:\n" +
+			"\n" +
+			"IP address: " + externalIP + "\n" +
+			"\n" +
+			"You can verify the configuration of the instance @\n" +
+			"\n" +
+			"\thttp://" + externalIP + ":" + strconv.Itoa(p.Port) + "/\n" +
+			"\n" +
+			"if your application is available at this location. Alternatively the configuration for the Unit instance\n" +
+			"can be changed or verified using the following URL:\n" +
+			"\n" +
+			"\thttp://" + externalIP + ":8080/config\n" +
+			"\n"
+
+	client.Pool.Broadcast <- websocket.Message{Type: 1, Body: mesg}
 }
 
 func setupRoutes() {
