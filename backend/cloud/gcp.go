@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -17,7 +18,8 @@ import (
 )
 
 //BuildGcpInstance takes the machine image and creates the running virtual machine
-func BuildGcpInstance(image string, machine string, c *websocket.Client, port int) (extIP string) {
+func BuildGcpInstance(image string, machine string, c *websocket.Client, port int) {
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Creating a instance on Google Cloud Platform\n")}
 	ctx := context.Background()
 	computeService, err := compute.NewService(ctx, option.WithCredentialsFile(GCPJSON))
 
@@ -96,16 +98,38 @@ OpLoop:
 	}
 
 	// Finds its internal and/or external IP addresses.
-	_, extIP = instanceIPs(inst)
+	_, extIP := instanceIPs(inst)
 
 	var start int64 = 0
 
+SerialLoop:
 	for {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		respSerial, _ := computeService.Instances.GetSerialPortOutput((fmt.Sprint(gcpconfig["project_id"])), GCPZONE, image).Start(start).Context(ctx).Do()
-		start = respSerial.Next
 
-		if start != respSerial.Next {
+		fmt.Println("Start", start, "Next", respSerial.Next)
+
+		// We will check whether the NGINX Unit instance has completed startup by getting the /config from
+		// the instance on port 8080
+		timeout := time.Duration(1 * time.Second)
+
+		client := http.Client{
+			Timeout: timeout,
+		}
+
+		resp, err := client.Get("http://" + extIP + ":8080/config")
+
+		if err != nil {
+			c.Pool.Broadcast <- websocket.Message{Type: 1, Body: respSerial.Contents}
+		} else {
+			c.Pool.Broadcast <- websocket.Message{Type: 1, Body: respSerial.Contents}
+			defer resp.Body.Close()
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			mesg :=
 				"Deployment of the nginx-unit-go instance on Google Cloud Platform has been completed.\n" +
 					"The external IP adddress for the machine is:\n" +
@@ -120,30 +144,15 @@ OpLoop:
 					"can be changed or verified using the following URL:\n" +
 					"\n" +
 					"\thttp://" + extIP + ":8080/config\n" +
-					"\n"
+					"\n" +
+					string(bodyBytes)
 
 			c.Pool.Broadcast <- websocket.Message{Type: 1, Body: mesg}
 
-		} else {
-			c.Pool.Broadcast <- websocket.Message{Type: 1, Body: respSerial.Contents}
+			break SerialLoop
 		}
-
+		start = respSerial.Next
 	}
-
-	/*
-		inst, err := computeService.Instances.Get((fmt.Sprint(gcpconfig["project_id"])), GCPZONE, image).Do()
-
-		if err != nil {
-			fmt.Errorf("Error getting instance %s details after creation: %v", image, err)
-
-		}
-
-		// Finds its internal and/or external IP addresses.
-		_, extIP = instanceIPs(inst)
-
-		return extIP
-	*/
-
 }
 
 func instanceIPs(inst *compute.Instance) (intIP, extIP string) {

@@ -2,7 +2,7 @@ package websocket
 
 import "fmt"
 
-// Pool type for he client registered
+// Pool type for the client registered
 type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client

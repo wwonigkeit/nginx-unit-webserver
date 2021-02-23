@@ -1,5 +1,14 @@
-var socket = new WebSocket("ws://localhost:8080/ws");
+var socket = new WebSocket("ws://192.168.1.48:8080/ws");
+/*
+var http = require('http');
+var WebSocketServer = require('websocket').server;
+var server = http.createServer();
+server.listen(8080);
 
+var socket = new WebSocketServer({
+    httpServer: server
+});
+*/
 module.exports.connect = function connect(cb) {
   console.log("Attempting Connection...");
 

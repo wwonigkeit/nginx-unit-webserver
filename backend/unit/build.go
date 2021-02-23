@@ -69,32 +69,6 @@ func Build(baseJSONObj *BaseStruct, c *websocket.Client) {
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Succesfully copied the /usr/local/bin/docker-entrypoint.sh file")}
 
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished build for " + baseJSONObj.Lang + "\n")}
-	/*
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		if err = cmd.Start(); err != nil {
-			log.Println(err)
-			return
-		}
-
-		s := bufio.NewScanner(io.MultiReader(stdout, stderr))
-		for s.Scan() {
-			c.Pool.Broadcast <- websocket.Message{Type: 1, Body: s.Text()}
-		}
-
-		if err := cmd.Wait(); err != nil {
-			log.Println(err)
-			return
-		}
-	*/
 }
 
 //PrintWaitLine waits for the completion of the command using the "Run" argument

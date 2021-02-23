@@ -96,6 +96,7 @@ func BuildPythonImage(pythonJSONObj *Python, c *websocket.Client) (imagename str
 
 	s := bufio.NewScanner(io.MultiReader(stdout, stderr))
 	for s.Scan() {
+		//time.Sleep(5 * time.Second)
 		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: s.Text()}
 	}
 

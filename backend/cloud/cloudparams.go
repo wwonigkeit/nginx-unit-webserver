@@ -7,3 +7,6 @@ const GCPJSON string = unit.BUILDDIR + "/templates/provisioners/vorteil-demo-gcp
 
 //GCPZONE contains the JSON Google Cloud Platform zone to use
 const GCPZONE string = "australia-southeast1-b"
+
+//AWSCONFIG contains the AWS shared cofniguration details
+const AWSCONFIG string = unit.BUILDDIR + "/templates/provisioners/.aws/config"

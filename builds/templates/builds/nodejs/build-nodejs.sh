@@ -32,11 +32,15 @@ else
         APPNAME=`ls`
 
 	# make the working directory
-	mkdir -p /$WORKINGDIR
+	mkdir -p $WORKINGDIR
+	pwd
+	ls -la
         # make app.js executable; link unit-http locally
-        cd /$CODENAME && mv -f * /$WORKINGDIR/
+        cd $CODENAME && mv -f * /$WORKINGDIR/
+	pwd
+	ls -la
         cd /$WORKINGDIR/ && chmod +x $EXECUTABLE
-        #pwd
+        pwd
         #ls -la
         npm link unit-http && npm install express && npm install yargs
         #pwd

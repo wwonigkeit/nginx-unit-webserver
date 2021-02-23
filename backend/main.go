@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/cloud"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/unit"
@@ -27,6 +26,7 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	}
 
 	pool.Register <- client
+
 	message, _ = client.Read()
 	jsonmessage := json.RawMessage(message.Body)
 
@@ -115,35 +115,23 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 		imagename = unit.BuildRubyImage(&rubyStruct, client)
 	}
 
-	var externalIP string
 	// Switch used to select the appropriate platform to deploy to
 	switch platform := p.Cloud.Platform; platform {
 	case "gcp":
 		// Create a machine in Google Cloud Platform
-		externalIP = cloud.BuildGcpInstance(imagename, p.Cloud.MachineType, client, p.Port)
+		fmt.Println("Provisioning to GCP")
+		cloud.BuildGcpInstance(imagename, p.Cloud.MachineType, client, p.Port)
 	case "aws":
-		//do aws
+		// Create a machine in Amazon Web Services
+		fmt.Println("Provisioning to AWS")
+		cloud.BuildAwsInstance(imagename, p.Cloud.MachineType, client, p.Port)
 	case "azure":
 		//do azure
 	}
 
-	mesg :=
-		"Deployment of the nginx-unit-" + p.Lang + " instance on " + p.Cloud.Platform + " has been completed.\n" +
-			"The external IP adddress for the machine is:\n" +
-			"\n" +
-			"IP address: " + externalIP + "\n" +
-			"\n" +
-			"You can verify the configuration of the instance @\n" +
-			"\n" +
-			"\thttp://" + externalIP + ":" + strconv.Itoa(p.Port) + "/\n" +
-			"\n" +
-			"if your application is available at this location. Alternatively the configuration for the Unit instance\n" +
-			"can be changed or verified using the following URL:\n" +
-			"\n" +
-			"\thttp://" + externalIP + ":8080/config\n" +
-			"\n"
+	client.Pool.Broadcast <- websocket.Message{Type: 1, Body: "Closing the client connection"}
 
-	client.Pool.Broadcast <- websocket.Message{Type: 1, Body: mesg}
+	pool.Unregister <- client
 }
 
 func setupRoutes() {

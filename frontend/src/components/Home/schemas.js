@@ -4,7 +4,7 @@ exports.customFormats = {
    "external-executable": "^[^/].*",
    "java-webapp": "^[^/].*",
    "ruby-script": "^[^/].*.ru",
-   "working-directory": "^/.*"
+   "working-directory": "^/.*",
 }
 
 exports.baseSchema = {
