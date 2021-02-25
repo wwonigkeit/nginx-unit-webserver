@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"strconv"
@@ -99,7 +100,7 @@ func JavaConfig(javaJSONObj *Java, c *websocket.Client) {
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + javaJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
-	//_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + javaJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + javaJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
 }
 
 //BuildJavaImage pushes the machine to the appropriate cloud platform as an image

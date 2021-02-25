@@ -2,6 +2,7 @@ package pliant
 
 import (
 	"bytes"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"strings"
@@ -14,7 +15,10 @@ const PLIANTURL string = "https://vorteil.pliant.io/api/v1/trigger/admin/User/Pr
 func Connect(jsonString string) (response *string, err error) {
 
 	// initialize http client
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 
 	req, err := http.NewRequest(http.MethodPost, PLIANTURL, strings.NewReader(jsonString))
 

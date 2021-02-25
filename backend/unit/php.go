@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"strconv"
@@ -131,7 +132,7 @@ func PhpConfig(phpJSONObj *PHP, c *websocket.Client) {
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + phpJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
-	//_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + phpJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + phpJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
 }
 
 //BuildPhpImage pushes the machine to the appropriate cloud platform as an image
