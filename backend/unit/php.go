@@ -5,18 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os/exec"
 	"strconv"
 	"time"
 
+	"github.com/wwonigkeit/nginx-unit-webserver/backend/pliant"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
 
 //PhpConfig echos the configuration for the PHP
 //Unit startup configurations
 func PhpConfig(phpJSONObj *PHP, c *websocket.Client) {
+
+	empJSON, _ := json.MarshalIndent(phpJSONObj, "", "  ")
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Original config for " + phpJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: string(empJSON)}
 
 	var environmentstr string
 	for key, value := range phpJSONObj.Environment {
@@ -84,9 +89,8 @@ func PhpConfig(phpJSONObj *PHP, c *websocket.Client) {
 						` + fmt.Sprint(useroptionstr) + `
 					}
 				},
-				"targets" : {
+				"targets" :
 					` + string(targetstr) + `
-				}
 			}
 		},
 		"listeners" : {
@@ -96,10 +100,38 @@ func PhpConfig(phpJSONObj *PHP, c *websocket.Client) {
 		}
 	}`
 
+	pliantString := `
+{
+	"bodyData": {
+		"lang" : "` + phpJSONObj.Lang + `",
+		"repo" : "` + phpJSONObj.Repo + `",
+		"package" : "` + DockerPackages[phpJSONObj.Lang] + `",
+		"cloud" : {
+			"platform" : "` + phpJSONObj.Cloud.Platform + `",
+			"machinetype" : "` + phpJSONObj.Cloud.MachineType + `"
+		},
+		"initialconfig" : 
+			` + jsonString + `
+	}
+}
+`
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished Pliant config for " + phpJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: pliantString}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Sending to Pliant server\n")}
+
+	resp, err := pliant.Connect(pliantString)
+
+	if err != nil {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + err.Error() + "\n")}
+	} else {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + *resp + "\n")}
+	}
+
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + phpJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
-	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + phpJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+	//_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + phpJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
 }
 
 //BuildPhpImage pushes the machine to the appropriate cloud platform as an image

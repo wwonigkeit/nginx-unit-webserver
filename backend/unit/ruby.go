@@ -2,20 +2,26 @@ package unit
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os/exec"
 	"strconv"
 	"time"
 
+	"github.com/wwonigkeit/nginx-unit-webserver/backend/pliant"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
 
 //RubyConfig echos the configuration for the Ruby
 //Unit startup configurations
 func RubyConfig(rubyJSONObj *Ruby, c *websocket.Client) {
+
+	empJSON, _ := json.MarshalIndent(rubyJSONObj, "", "  ")
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Original config for " + rubyJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: string(empJSON)}
 
 	var environmentstr string
 
@@ -28,7 +34,7 @@ func RubyConfig(rubyJSONObj *Ruby, c *websocket.Client) {
 	jsonString := `{
 		"applications" : {
 			"` + rubyJSONObj.Appname + `" : {
-				"type" : "perl",
+				"type" : "ruby",
 				"limits" : {
 					"timeout" : ` + strconv.Itoa(rubyJSONObj.Limits.Timeout) + `,
 					"requests" : ` + strconv.Itoa(rubyJSONObj.Limits.Requests) + `
@@ -55,10 +61,38 @@ func RubyConfig(rubyJSONObj *Ruby, c *websocket.Client) {
 		}
 	}`
 
+	pliantString := `
+{
+	"bodyData": {
+		"lang" : "` + rubyJSONObj.Lang + `",
+		"repo" : "` + rubyJSONObj.Repo + `",
+		"package" : "` + DockerPackages[rubyJSONObj.Lang] + `",
+		"cloud" : {
+			"platform" : "` + rubyJSONObj.Cloud.Platform + `",
+			"machinetype" : "` + rubyJSONObj.Cloud.MachineType + `"
+		},
+		"initialconfig" : 
+			` + jsonString + `
+	}
+}
+`
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished Pliant config for " + rubyJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: pliantString}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Sending to Pliant server\n")}
+
+	resp, err := pliant.Connect(pliantString)
+
+	if err != nil {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + err.Error() + "\n")}
+	} else {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + *resp + "\n")}
+	}
+
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + rubyJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
-	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + rubyJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+	//_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + rubyJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
 }
 
 //BuildRubyImage pushes the machine to the appropriate cloud platform as an image

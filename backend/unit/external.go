@@ -5,18 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os/exec"
 	"strconv"
 	"time"
 
+	"github.com/wwonigkeit/nginx-unit-webserver/backend/pliant"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
 
 //ExternalConfig echos the configuration for the Golang and NodeJs
 //unit startup configurations
 func ExternalConfig(extJSONObj *External, c *websocket.Client) {
+
+	empJSON, _ := json.MarshalIndent(extJSONObj, "", "  ")
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Original config for " + extJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: string(empJSON)}
 
 	var environmentstr string
 
@@ -26,40 +31,69 @@ func ExternalConfig(extJSONObj *External, c *websocket.Client) {
 
 	args, _ := json.Marshal(extJSONObj.Arguments)
 
-	jsonString := `{
-		"applications" : {
-			"` + extJSONObj.Appname + `" : {
-				"type" : "external",
-				"limits" : {
-					"timeout" : ` + strconv.Itoa(extJSONObj.Limits.Timeout) + `,
-					"requests" : ` + strconv.Itoa(extJSONObj.Limits.Requests) + `
-				},
-				"processes" : {
-					"max" : ` + strconv.Itoa(extJSONObj.Processes.Max) + `,
-					"spare" : ` + strconv.Itoa(extJSONObj.Processes.Spare) + `,
-					"idle_timeout" : ` + strconv.Itoa(extJSONObj.Processes.IdleTimeout) + `
-				},
-				"working_directory" : "` + extJSONObj.WorkingDirectory + `",
-				"user" : "` + extJSONObj.User + `",
-				"group" : "` + extJSONObj.Group + `",
-				"environment" : {
-					` + fmt.Sprint(environmentstr) + `
-				},
-				"executable" : "` + extJSONObj.Executable + `",
-				"arguments" : ` + string(args) + `
-			}
-		},
-		"listeners" : {
-			"*:` + strconv.Itoa(extJSONObj.Port) + `" : {
-				"pass" : "applications/` + extJSONObj.Appname + `"
-			}
+	jsonString := `
+{
+	"applications" : {
+		"` + extJSONObj.Appname + `" : {
+			"type" : "external",
+			"limits" : {
+				"timeout" : ` + strconv.Itoa(extJSONObj.Limits.Timeout) + `,
+				"requests" : ` + strconv.Itoa(extJSONObj.Limits.Requests) + `
+			},
+			"processes" : {
+				"max" : ` + strconv.Itoa(extJSONObj.Processes.Max) + `,
+				"spare" : ` + strconv.Itoa(extJSONObj.Processes.Spare) + `,
+				"idle_timeout" : ` + strconv.Itoa(extJSONObj.Processes.IdleTimeout) + `
+			},
+			"working_directory" : "` + extJSONObj.WorkingDirectory + `",
+			"user" : "` + extJSONObj.User + `",
+			"group" : "` + extJSONObj.Group + `",
+			"environment" : {
+				` + fmt.Sprint(environmentstr) + `
+			},
+			"executable" : "` + extJSONObj.Executable + `",
+			"arguments" : ` + string(args) + `
 		}
-	}`
+	},
+	"listeners" : {
+		"*:` + strconv.Itoa(extJSONObj.Port) + `" : {
+			"pass" : "applications/` + extJSONObj.Appname + `"
+		}
+	}
+}`
+
+	pliantString := `
+{
+	"bodyData": {
+		"lang" : "` + extJSONObj.Lang + `",
+		"repo" : "` + extJSONObj.Repo + `",
+		"package" : "` + DockerPackages[extJSONObj.Lang] + `",
+		"cloud" : {
+			"platform" : "` + extJSONObj.Cloud.Platform + `",
+			"machinetype" : "` + extJSONObj.Cloud.MachineType + `"
+		},
+		"initialconfig" : 
+			` + jsonString + `
+	}
+}
+`
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished Pliant config for " + extJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: pliantString}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Sending to Pliant server\n")}
+
+	resp, err := pliant.Connect(pliantString)
+
+	if err != nil {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + err.Error() + "\n")}
+	} else {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + *resp + "\n")}
+	}
 
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + extJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
-	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + extJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+	//_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + extJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
 }
 
 //BuildExternalImage pushes the machine to the appropriate cloud platform as an image

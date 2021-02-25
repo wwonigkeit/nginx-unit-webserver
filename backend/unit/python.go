@@ -2,20 +2,26 @@ package unit
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os/exec"
 	"strconv"
 	"time"
 
+	"github.com/wwonigkeit/nginx-unit-webserver/backend/pliant"
 	"github.com/wwonigkeit/nginx-unit-webserver/backend/websocket"
 )
 
 //PythonConfig echos the configuration for the Python
 //Unit startup configurations
 func PythonConfig(pythonJSONObj *Python, c *websocket.Client) {
+
+	empJSON, _ := json.MarshalIndent(pythonJSONObj, "", "  ")
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Original config for " + pythonJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: string(empJSON)}
 
 	var environmentstr string
 
@@ -28,7 +34,7 @@ func PythonConfig(pythonJSONObj *Python, c *websocket.Client) {
 	jsonString := `{
 		"applications" : {
 			"` + pythonJSONObj.Appname + `" : {
-				"type" : "perl",
+				"type" : "python",
 				"limits" : {
 					"timeout" : ` + strconv.Itoa(pythonJSONObj.Limits.Timeout) + `,
 					"requests" : ` + strconv.Itoa(pythonJSONObj.Limits.Requests) + `
@@ -60,10 +66,38 @@ func PythonConfig(pythonJSONObj *Python, c *websocket.Client) {
 		}
 	}`
 
+	pliantString := `
+{
+	"bodyData": {
+		"lang" : "` + pythonJSONObj.Lang + `",
+		"repo" : "` + pythonJSONObj.Repo + `",
+		"package" : "` + DockerPackages[pythonJSONObj.Lang] + `",
+		"cloud" : {
+			"platform" : "` + pythonJSONObj.Cloud.Platform + `",
+			"machinetype" : "` + pythonJSONObj.Cloud.MachineType + `"
+		},
+		"initialconfig" : 
+			` + jsonString + `
+	}
+}
+`
+
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished Pliant config for " + pythonJSONObj.Lang + "\n")}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: pliantString}
+	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Sending to Pliant server\n")}
+
+	resp, err := pliant.Connect(pliantString)
+
+	if err != nil {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + err.Error() + "\n")}
+	} else {
+		c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Error sending to Pliant server " + *resp + "\n")}
+	}
+
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: ("Finished config for " + pythonJSONObj.Lang + "\n")}
 	c.Pool.Broadcast <- websocket.Message{Type: 1, Body: jsonString}
 
-	_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + pythonJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
+	//_ = ioutil.WriteFile((BUILDDIR + "/machines/builds/nginx-unit-" + pythonJSONObj.Lang + "/docker-entrypoint.d/config.json"), []byte(jsonString), 0644)
 }
 
 //BuildPythonImage pushes the machine to the appropriate cloud platform as an image

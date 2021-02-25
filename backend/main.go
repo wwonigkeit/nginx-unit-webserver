@@ -42,6 +42,7 @@ func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	unit.Build(&p, client)
 
 	var imagename string
+
 	// Switch used to select the appropriate language modules to build
 	switch lang := p.Lang; lang {
 	case "go", "nodejs":
